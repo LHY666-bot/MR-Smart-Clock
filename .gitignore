@@ -1,0 +1,28 @@
+# ===== 虚拟环境 =====
+.venv/
+
+# ===== Node.js 依赖 =====
+node_modules/
+
+# ===== Python 缓存 =====
+__pycache__/
+*.pyc
+*.pyo
+
+# ===== IDE 配置 =====
+.idea/
+.vscode/
+*.iml
+
+# ===== 敏感数据（人脸照片、考勤记录、密码）=====
+clock/data/faces/
+clock/data/*.csv
+clock/data/employee_data.txt
+clock/data/lock_record.txt
+clock/data/user_password.txt
+
+# ===== 临时文件 =====
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
