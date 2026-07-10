@@ -29,10 +29,20 @@ def login():
             print("账号或密码错误, 请重新输入!")
             print("------------------------------")
 
-# 人脸打卡
+# 人脸打卡（普通模式）
 def face_clock():
     print("请正面对准摄像头进行打卡 ")
     name = camera.clock_in()
+    if name is not None:
+        hr.add_lock_record(name)
+        print(name + " 打卡成功! ")
+
+# 人脸打卡（异常检测模式）
+def face_clock_with_detection():
+    print("正在启动异常行为检测模式...")
+    print("检测项目: 多人识别、口罩检测、墨镜检测、位置偏移、图像质量")
+    print("请正面对准摄像头进行打卡 ")
+    name = camera.clock_in_with_detection()
     if name is not None:
         hr.add_lock_record(name)
         print(name + " 打卡成功! ")
@@ -172,7 +182,8 @@ def start():
 *****************************************
 +----------------------------------------+
 |               主功能菜单               |
-①打卡  ②查看记录  ③员工管理  ④考勤报表  ⑤退出
+①打卡(普通模式)  ②打卡(异常检测模式)  ③查看记录
+④员工管理  ⑤考勤报表  ⑥退出
 +----------------------------------------+"""
     while not finish:
         print(menu)
@@ -180,21 +191,23 @@ def start():
         if option == "1":
             face_clock()
         elif option == "2":
+            face_clock_with_detection()
+        elif option == "3":
             if ADMIN_LOGIN:
                 check_record()
             else:
                 login()
-        elif option == "3":
+        elif option == "4":
             if ADMIN_LOGIN:
                 employee_management()
             else:
                 login()
-        elif option == "4":
+        elif option == "5":
             if ADMIN_LOGIN:
                 check_report()
             else:
                 login()
-        elif option == "5":
+        elif option == "6":
             finish = True
         else:
             print("输入的指令有误, 请重新输入! ")

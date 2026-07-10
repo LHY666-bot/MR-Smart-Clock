@@ -3,6 +3,7 @@ from util import public_tools as tool
 from util import io_tools as io
 from service import recognize_service as rs
 from service import hr_service as hr
+from service.abnormal_detection import abnormal_detector
 
 ESC_KEY = 27
 ENTER_KEY = 13
@@ -30,6 +31,64 @@ def register(code):
     cv2.destroyAllWindows()                                # 释放所有窗体
     cameraCapture.release()                                # 释放摄像头
     io.load_employee_pic()                                 # 让人脸识别服务重新载入员工照片
+
+# 异常行为检测打卡
+def clock_in_with_detection():
+    cameraCapture = cv2.VideoCapture(0, cv2.CAP_DSHOW)     # 获得默认摄像头
+    success, frame = cameraCapture.read()                  # 读取一帧
+    
+    detection_start_time = cv2.getTickCount()
+    detection_interval = 0.5
+    
+    while success and cv2.waitKey(1) == -1:                # 如果读到有效帧数
+        current_time = cv2.getTickCount()
+        elapsed_time = (current_time - detection_start_time) / cv2.getTickFrequency()
+        
+        display_frame = frame.copy()
+        
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        if elapsed_time >= detection_interval:
+            abnormalities = abnormal_detector.detect_all_abnormalities(frame, gray)
+            detection_start_time = current_time
+            
+            if abnormalities:
+                for i, abnormality in enumerate(abnormalities):
+                    cv2.putText(display_frame, abnormality, (10, 30 + i * 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                
+                status = abnormal_detector.get_detection_summary()
+                if "多人" in status or "口罩" in status or "墨镜" in status:
+                    cv2.putText(display_frame, "异常检测: 请修正后重试", (10, 30 + len(abnormalities) * 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    cv2.imshow("check in with detection", display_frame)
+                    success, frame = cameraCapture.read()
+                    continue
+        
+        cv2.imshow("check in with detection", display_frame)
+        
+        if rs.found_face(gray):
+            gray_resized = cv2.resize(gray, (io.IMG_WIDTH, io.IMG_HEIGHT))
+            code = rs.recognise_face(gray_resized)
+            if code != -1:
+                name = hr.get_name_with_code(code)
+                if name is not None:
+                    abnormalities = abnormal_detector.detect_all_abnormalities(frame, gray)
+                    if not abnormalities:
+                        cv2.destroyAllWindows()
+                        cameraCapture.release()
+                        return name
+                    else:
+                        for i, abnormality in enumerate(abnormalities):
+                            cv2.putText(display_frame, abnormality, (10, 30 + i * 30), 
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        cv2.putText(display_frame, "检测到异常，请修正后重试", (10, 30 + len(abnormalities) * 30), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        success, frame = cameraCapture.read()
+    
+    cv2.destroyAllWindows()
+    cameraCapture.release()
 
     # 开启摄像头打卡
 def clock_in():
